@@ -17,7 +17,7 @@ def read_dataset(datasets : str, type : str, lag_amout = 0, with_angle = False, 
             x = df[["dx", "dy", "dt"]]
  
         if with_angle:
-            x["d_angle"] = np.atan2(df["dy"], df["dx"])
+            x["d_angle"] = np.arctan2(df["dy"], df["dx"])
 
         targets = df[["x_to", "y_to"]]
         y = construct_ground_truth(df[['dx','dy']],df[["x", "y"]], df[["x_to", "y_to"]], type)

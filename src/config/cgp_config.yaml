@@ -1,0 +1,13 @@
+hyperparameters :
+  # ea parameters
+  mu : 60
+  lambda : 80
+  m_const : 0.01
+  m_node : 0.3
+  m_output : 0.3
+  n_gen :  1000 # 50000
+
+
+  # cgp parameters
+  col :  120 # old 60
+  row : 1

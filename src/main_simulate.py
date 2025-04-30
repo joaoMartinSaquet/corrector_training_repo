@@ -3,21 +3,28 @@ from pynput import mouse, keyboard
 import torch
 from utils import load_config
 import pickle
+import argparse
 
 
 
 
 if __name__ == "__main__":
-
-    model_type = "LSTM" # model to load
-    experiment = "P0_C0" # experiment to load
+    
+    parser = argparse.ArgumentParser(description='Simulate a learned controller by chosing the model, patient and condition' \
+    'line example : python main_simulate.py -model ANN -patient P0 -condition C0')
+    parser.add_argument("-model", help="ANN, LSTM or CGP", default="ANN")
+    parser.add_argument("-patient", help="P0 or P1", default="P0")
+    parser.add_argument("-condition", help="C0 or C1", default="C0")
+    args = parser.parse_args()
+    print("arguments : ",args)
+    model_type = args.model # model to load
+    experiment = "{}_{}".format(args.patient, args.condition) # experiment to load
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model_log_path = f"../results/{experiment}/{model_type}/"
     print("logging to ", model_log_path)
     # read hyperparameters
-    config = load_config("config/ann_config.yaml")
+    config = load_config(f"config/{model_type.lower()}_config.yaml")
     hyperparameters = config['hyperparameters']
-    hyperparameters['len_input'] = 4
 
     print("----------- Starting control for experiment : {} with model : {} -----------".format(experiment, model_type))
     

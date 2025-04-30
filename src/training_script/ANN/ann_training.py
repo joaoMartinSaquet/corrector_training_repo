@@ -18,10 +18,7 @@ from training_script.ANN.model_handling import *
 from utils import *
 
 import pandas as pd
-import yaml
 import matplotlib.pyplot as plt
-import numpy as np
-import json
 # to remove pandas error
 pd.options.mode.chained_assignment = None
 

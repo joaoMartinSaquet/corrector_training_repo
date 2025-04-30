@@ -83,7 +83,7 @@ class Corrector(object):
             self.model_input.append(model_input)
             if self.lag_amount > 0:
                 temp_model_input = np.array(list(self.model_input))
-                temp_model_input = temp_model_input[:, [0,1,3]].flatten() # dx, dy, d_angle
+                temp_model_input = temp_model_input[:, [0,1,3]].flatten() # dx, dy, angle_tan
                 temp_model_input = np.insert(temp_model_input, 2, model_input[2]) # we add the scaled dt
                 model_input = temp_model_input
 

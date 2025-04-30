@@ -7,7 +7,7 @@ pd.options.mode.chained_assignment = None
 
 MAX_DISPLACEMENT = 50
 
-def read_dataset(datasets : str, type : str, lag_amout = 0, with_angle = False, with_position = False):
+def read_dataset(datasets : str, type : str, lag_amout = 0, with_angle = False, with_position = False, full_dataset = False):
         
         
         df = pd.read_csv(datasets)
@@ -15,9 +15,18 @@ def read_dataset(datasets : str, type : str, lag_amout = 0, with_angle = False, 
             x = df[["x", "y","dx", "dy", "dt"]] # i removed dt ! 
         else:
             x = df[["dx", "dy", "dt"]]
+        
+        x['dt'] = x['dt'] / 1000
  
         if with_angle:
-            x["d_angle"] = np.arctan2(df["dy"], df["dx"])
+            x["angle_tan"] = np.arctan2(df["dy"], df["dx"])
+            if full_dataset:
+                compute_velocities(x)
+                compute_accelerations(x)
+                compute_jerk(x)
+                compute_curvature(x)
+                compute_angular_velocity(x)
+
 
         targets = df[["x_to", "y_to"]]
         y = construct_ground_truth(df[['dx','dy']],df[["x", "y"]], df[["x_to", "y_to"]], type)
@@ -26,7 +35,7 @@ def read_dataset(datasets : str, type : str, lag_amout = 0, with_angle = False, 
             x[f"dx_{k+1}"] = x["dx"].shift(k+1)
             x[f"dy_{k+1}"] = x["dy"].shift(k+1)
             if with_angle:
-                x[f"d_angle_{k+1}"] = x["d_angle"].shift(k+1)
+                x[f"angle_tan_{k+1}"] = x["angle_tan"].shift(k+1)
 
 
         x.fillna(0, inplace=True)
@@ -76,12 +85,18 @@ def construct_ground_truth(displacement, cursor_pose, target_pose, type, change_
             mag = np.sqrt(dx**2 + dy**2)
             # np.clip(mag.to_numpy(), 0, MAX_DISPLACEMENT, mag)
             angle = np.arctan2(dy.to_numpy(), dx.to_numpy())
+            # scale magnitude
+            min_mag = 0
+            max_mag = MAX_DISPLACEMENT
+            mag = (mag - min_mag) / (max_mag - min_mag)
+
+
 
             y['dx'] = mag * np.cos(angle)
             y['dy'] = mag * np.sin(angle)
 
             # we need to say that if the cursor is in target dx is 0 ! 
-            dist_cursor_target = mag.to_numpy()
+            dist_cursor_target = np.sqrt(dx**2 + dy**2)
             indexes = np.where(dist_cursor_target < target_width/2)[0]
             if indexes.shape[0] > 0:    
                 y['dx'][indexes] = 0
@@ -123,6 +138,69 @@ def preprocess_dataset(x, y, scaler_type = "minmax", feature_range = (-1, 1)):
         x = scaler.transform(x)
     return x, y, scaler    
 
+def compute_velocities(x):
+    """ Compute mouse velocities with x is the dataset
+        this function return a new df with columns vdx and vdy and v 
+
+    Args:
+        x (df): DataFrame with columns dx and dy and dt at least
+    """
+
+    x["vx"] = x["dx"] / x["dt"]
+    x["vy"] = x["dy"] / x["dt"]
+    x["v"] = np.sqrt(x["vx"]**2 + x["vy"]**2)
+    
+    return x
+
+def compute_accelerations(x):
+    """ Compute mouse accelerations with x is the dataset
+        this function return a new df with columns a, ji, wi
+
+    Args:
+        x (df): DataFrame with columns v and dt
+    """
+    dv = np.diff(x["v"], prepend=0)
+    x["a"] = dv / x["dt"]  
+    return x
+
+def compute_jerk(x):
+    """ Compute mouse jerks with x is the dataset
+        this function return a new df with columns j
+
+    Args:
+        x (df): DataFrame with columns a and dt
+    """
+    da = np.diff(x["a"], prepend=0)
+    x["j"] = da / x["dt"]  
+    return x
+
+def compute_angular_velocity(x):
+    """ Compute mouse angular_velocity with x is the dataset
+        this function return a new df with columns w
+
+    Args:
+        x (df): DataFrame with columns vx and vy
+    """
+
+
+
+    x["w"] = x["angle_tan"] / x["dt"]
+    return x
+
+def compute_curvature(x):
+    """_summary_
+
+    Args:
+        x (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    dtheta = np.diff(x["angle_tan"], prepend=0)
+    s = np.cumsum(np.sqrt(x["dx"]**2 + x["dy"]**2))
+    ds = np.diff(s, prepend=0)
+    x["c"] = dtheta / ds
+    return x
 
 
 if __name__ == "__main__":

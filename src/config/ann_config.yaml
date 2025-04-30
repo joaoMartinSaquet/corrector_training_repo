@@ -4,5 +4,5 @@ hyperparameters:
   num_epochs: 1000       # Number of training epochs
   batch_size: 32        # Batch size for training
   num_layers: 2         # Number of hidden layers
-  model: "ANN"          # ANN or LSTM 
+  model: "LSTM"          # ANN or LSTM 
   sequence_length: 30

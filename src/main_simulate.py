@@ -2,6 +2,7 @@ from simulate_control.simulate_controller import Corrector
 from pynput import mouse, keyboard
 import torch
 from utils import load_config
+import pickle
 
 
 
@@ -26,9 +27,11 @@ if __name__ == "__main__":
 
     model = torch.jit.script(model)
 
+    # load data hyperparameters
+    data_hyperparameters = pickle.load(open(model_log_path + "data_hyperparameters.p", "rb"))
 
     corrector = Corrector()
-    corrector.set_model(model, model_type, hyperparameters)
+    corrector.set_model(model, model_type, data_hyperparameters)
     with mouse.Listener(on_move=corrector.on_move), keyboard.Listener(on_press=corrector.on_press) as listener:
         corrector.set_listener(listener)
         listener.join()

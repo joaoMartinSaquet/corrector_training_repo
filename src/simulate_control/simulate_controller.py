@@ -6,7 +6,7 @@ import time
 
 from utils import *
 from collections import deque
-
+import pickle
 
 
 '''
@@ -71,18 +71,27 @@ class Corrector(object):
         # keep dx and dy for log purpose
         # self.dxs.append(dx)
         # self.dys.append(dy)
-        if self.seq_length is None:
+        if self.seq_length is None and self.lag_amount == 0:
+            # broken
             model_input = np.array([self.x_poses[-1], self.x_poses[-1], dx, dy]) # should i take current x and y or last one ? 
             model_input = self.scale_input(model_input)
-
         else:
             # model_input = np.array([self.x_poses[-1], self.x_poses[-1], dx, dy]) # should i take current x and y or last one ? 
             model_input = np.array([dx, dy, dt, np.atan2(dy, dx)])
             # scale input
             model_input = self.scale_input(model_input)
             self.model_input.append(model_input)
-            model_input = np.array(list(self.model_input))    
-        
+            if self.lag_amount > 0:
+                temp_model_input = np.array(list(self.model_input))
+                temp_model_input = temp_model_input[:, [0,1,3]].flatten() # dx, dy, d_angle
+                temp_model_input = np.insert(temp_model_input, 2, model_input[2]) # we add the scaled dt
+                model_input = temp_model_input
+
+            else:
+                model_input = np.array(list(self.model_input))    
+
+
+            
 
         model_input = torch.from_numpy(model_input).float()
         
@@ -183,14 +192,21 @@ class Corrector(object):
 
         self.model = model
         self.model_type = model_type
-        self.hyperparameters = hyperparameters
-        self.seq_length = hyperparameters['sequence_length']
-        self.len_input = hyperparameters['len_input']
-        if  self.seq_length is not None:
-            self.model_input = deque([], maxlen=self.seq_length)
+        self.data_hyperparameters = hyperparameters
+        self.seq_length = hyperparameters['seq_length']
+        self.lag_amount = hyperparameters['lag_amount']
+        
+        self.len_input = hyperparameters['with_angle'] + 3 +  hyperparameters['with_positions']
+        if  self.seq_length is not None or self.lag_amount > 0:
+            if self.seq_length is not None:
+                self.model_input = deque([], maxlen=self.seq_length)
 
-            for i in range(self.seq_length):
-                self.model_input.append(np.zeros(self.len_input))
+                for i in range(self.seq_length):
+                    self.model_input.append(np.zeros(self.len_input))
+            else:
+                self.model_input = deque([], maxlen=self.lag_amount)
+                for i in range(self.lag_amount):
+                    self.model_input.append(np.zeros(self.len_input))
 
         self.corrector = model
 

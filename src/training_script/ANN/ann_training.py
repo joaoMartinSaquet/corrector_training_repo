@@ -5,8 +5,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 import os
 import sys 
-
-
+import pickle
 # file_path = os.path.abspath(__file__)
 # script_directory = os.path.dirname(file_path)
 # print("script directory : ", script_directory)
@@ -25,6 +24,13 @@ import numpy as np
 import json
 # to remove pandas error
 pd.options.mode.chained_assignment = None
+
+# data reading parameters
+data_hyperparameters = {"seq_length": 0,
+                        "lag_amount": 0,
+                        "with_angle": True,
+                        "GT": "dir",
+                        "with_positions": False}
 
 def trainging_loops(model, opt, criterion, train_dl, val_dl, epochs, device, log_mod = 10):
 
@@ -71,9 +77,13 @@ def train_ann(exp_name, hyperparameters, device):
     # Assign hyperparameters to variables
     hidden_size, learning_rate, num_epochs, batch_size, num_layers, _, _ = load_hyperparameters(hyperparameters)
 
-    x, y, _, _ = read_dataset(f"/home/jmartinsaquet/Documents/code/IA2_codes/clone/datasets/{exp_name}.csv", "vec", with_angle=True, lag_amout=10)
-    x, y, scaler = preprocess_dataset(x, y)
 
+    x, y, _, _ = read_dataset(f"/home/jmartinsaquet/Documents/code/IA2_codes/clone/datasets/{exp_name}.csv", data_hyperparameters["GT"], 
+                              lag_amout=data_hyperparameters["lag_amount"], with_angle=data_hyperparameters["with_angle"], with_position=data_hyperparameters["with_positions"])
+    
+    x, y, scaler = preprocess_dataset(x, y)
+    data_hyperparameters['scaler'] = scaler
+    data_hyperparameters["seq_length"] = None
     train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, random_state=42, shuffle=False)
     train_dataset = FittsDataset(train_x, train_y)
     val_dataset = FittsDataset(val_x, val_y)
@@ -92,13 +102,17 @@ def train_ann(exp_name, hyperparameters, device):
     return model, train_loss, val_loss
 
 def train_lstm(exp_name, hyperparameters, device):
-
-
+    
     # Assign hyperparameters to variables
     hidden_size, learning_rate, num_epochs, batch_size, num_layers, _, seq_l = load_hyperparameters(hyperparameters)
 
-    x, y, _, _ = read_dataset(f"/home/jmartinsaquet/Documents/code/IA2_codes/clone/datasets/{exp_name}.csv", "dir", with_angle=True)
+    data_hyperparameters['seq_length'] = seq_l
+
+    x, y, _, _ = read_dataset(f"/home/jmartinsaquet/Documents/code/IA2_codes/clone/datasets/{exp_name}.csv", data_hyperparameters["GT"], 
+                              lag_amout=data_hyperparameters["lag_amount"], with_angle=data_hyperparameters["with_angle"], with_position=data_hyperparameters["with_positions"])
+    
     x, y, scaler = preprocess_dataset(x, y, 'minmax')
+    data_hyperparameters['scaler'] = scaler
 
     train_x, val_x, train_y, val_y = train_test_split(x, y, test_size=0.2, random_state=42, shuffle=False)
     train_dataset = FittsDatasetSeq(train_x, train_y, sequence_length=seq_l)
@@ -134,7 +148,7 @@ def main(config_path):
     print("using device : ",device)
     batch_size = hyperparameters['batch_size']
     model_type = hyperparameters['model']
-    log_dir = f"results/{experiment_name}/{model_type}/"
+    log_dir = f"../results/{experiment_name}/{model_type}/"
     print("logging to ", log_dir)
     os.makedirs(log_dir, exist_ok=True)
     
@@ -150,7 +164,7 @@ def main(config_path):
     loss = {"train_loss": train_loss, "val_loss": val_loss}
     pd.DataFrame(loss).to_csv(log_dir + "loss.csv")
     shutil.copy(config_path, log_dir + "config.yaml")
-
+    pickle.dump(data_hyperparameters, open(log_dir + "data_hyperparameters.p", "wb"))
     plt.plot(train_loss)
     plt.plot(val_loss)
     plt.legend(["train loss", "val loss"])

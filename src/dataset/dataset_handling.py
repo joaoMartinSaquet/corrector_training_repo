@@ -22,7 +22,7 @@ def read_dataset(datasets : str, type : str, lag_amout = 0, with_angle = False, 
         targets = df[["x_to", "y_to"]]
         y = construct_ground_truth(df[['dx','dy']],df[["x", "y"]], df[["x_to", "y_to"]], type)
 
-        for k in range(lag_amout):
+        for k in range(lag_amout -1):
             x[f"dx_{k+1}"] = x["dx"].shift(k+1)
             x[f"dy_{k+1}"] = x["dy"].shift(k+1)
             if with_angle:

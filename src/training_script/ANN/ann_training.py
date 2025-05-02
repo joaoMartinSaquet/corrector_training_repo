@@ -26,8 +26,9 @@ pd.options.mode.chained_assignment = None
 data_hyperparameters = {"seq_length": 0,
                         "lag_amount": 0,
                         "with_angle": True,
-                        "GT": "dir",
-                        "with_positions": False}
+                        "GT": "vec",
+                        "with_positions": False,
+                        "full_dataset": True}
 
 def trainging_loops(model, opt, criterion, train_dl, val_dl, epochs, device, log_mod = 10):
 
@@ -76,11 +77,12 @@ def train_ann(exp_name, hyperparameters, device):
 
 
     x, y, _, _ = read_dataset(f"/home/jmartinsaquet/Documents/code/IA2_codes/clone/datasets/{exp_name}.csv", data_hyperparameters["GT"], 
-                              lag_amout=data_hyperparameters["lag_amount"], with_angle=data_hyperparameters["with_angle"], with_position=data_hyperparameters["with_positions"])
+                              lag_amout=data_hyperparameters["lag_amount"], with_angle=data_hyperparameters["with_angle"],
+                              with_position=data_hyperparameters["with_positions"], full_dataset=data_hyperparameters["full_dataset"])
     
     x, y, scaler = preprocess_dataset(x, y)
     data_hyperparameters['scaler'] = scaler
-    data_hyperparameters["seq_length"] = None
+    # data_hyperparameters["seq_length"] = None
     train_x, val_x, train_y, val_y = train_test_split(x, y, test_size = 0.2, random_state=42, shuffle=False)
     train_dataset = FittsDataset(train_x, train_y)
     val_dataset = FittsDataset(val_x, val_y)

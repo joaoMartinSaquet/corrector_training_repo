@@ -14,7 +14,10 @@ def load_hyperparameters(hyperparameters):
     batch_size = hyperparameters['batch_size']
     num_layers = hyperparameters['num_layers']
     model_type = hyperparameters['model']
-    sequence_length = hyperparameters['sequence_length']
+    if "sequence_length" in hyperparameters:
+        sequence_length = hyperparameters['sequence_length']
+    else:
+        sequence_length = None
 
     return hidden_size, learning_rate, num_epochs, batch_size, num_layers, model_type, sequence_length
 

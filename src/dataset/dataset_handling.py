@@ -39,6 +39,7 @@ def read_dataset(datasets : str, type : str, lag_amout = 0, with_angle = False, 
 
 
         x.fillna(0, inplace=True)
+        x.replace([np.inf, -np.inf], 0, inplace=True)
         traj = df[["x", "y"]]
 
         
@@ -200,6 +201,8 @@ def compute_curvature(x):
     s = np.cumsum(np.sqrt(x["dx"]**2 + x["dy"]**2))
     ds = np.diff(s, prepend=0)
     x["c"] = dtheta / ds
+    
+    
     return x
 
 

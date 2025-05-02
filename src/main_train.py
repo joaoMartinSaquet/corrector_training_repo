@@ -12,8 +12,8 @@ from training_script.CGP import train_cgp
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model", help="ANN, LSTM or CGP")
-
+    parser.add_argument("-model", help="ANN, LSTM or CGP", default="ANN")
+ 
     args = parser.parse_args()
 
     if args.model == "ANN":
@@ -24,7 +24,4 @@ if __name__ == "__main__":
         train_cgp.main(config_path="config/cgp_config.yaml")
     else:
         raise ValueError(f"Unknown model: {args.model}")
-    # dataset_handling.read_dataset()
-    ann_training.main(config_path="config/ann_config.yaml")
-    # train_cgp.main(config_path="config/cgp_config.yaml")
     
